@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunicacion Asertiva - Puntaje</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #fff;
+            padding: 1.5rem 1rem;
+        }
+
+        .app-header { text-align: center; margin-bottom: 1.5rem; }
+        .app-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.5px; }
+        .app-header .subtitle { color: #a0a0c0; font-size: 0.85rem; margin-top: 0.3rem; }
+        .app-header .rule { color: #818cf8; font-size: 0.75rem; margin-top: 0.3rem; font-style: italic; }
+
+        /* Sync status */
+        .sync-status {
+            text-align: center; margin-bottom: 1rem; font-size: 0.75rem;
+            display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+        }
+
+        .sync-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        }
+
+        .sync-dot.online { background: #4ade80; }
+        .sync-dot.syncing { background: #fbbf24; animation: pulse 1s infinite; }
+        .sync-dot.offline { background: #f87171; }
+        .sync-dot.error { background: #f87171; }
+
+        .sync-text { color: #a0a0c0; }
+
+        .btn-refresh {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            color: #a0a0c0; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 6px;
+            cursor: pointer; transition: all 0.2s; margin-left: 0.3rem;
+        }
+
+        .btn-refresh:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+        /* (setup banner removed - URL is configured in code) */
+
+        /* Tabs */
+        .tabs { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+
+        .tab-btn {
+            padding: 0.6rem 1.3rem; border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; background: transparent; color: #a0a0c0;
+            font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .tab-btn:hover { background: rgba(255,255,255,0.05); }
+        .tab-btn.active { background: rgba(99, 102, 241, 0.3); border-color: #818cf8; color: #fff; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* New Game Form */
+        .new-game-section {
+            max-width: 460px; margin: 0 auto 2rem;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px; padding: 1.5rem; backdrop-filter: blur(10px);
+        }
+
+        .new-game-section h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+
+        .form-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+
+        .form-row input {
+            flex: 1; min-width: 120px; padding: 0.7rem 1rem;
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+            background: rgba(255,255,255,0.08); color: #fff; font-size: 0.95rem;
+            outline: none; transition: border-color 0.2s;
+        }
+
+        .form-row input:focus { border-color: #818cf8; }
+        .form-row input::placeholder { color: #6b6b8a; }
+        .form-row input.input-error { border-color: #f87171; }
+
+        .form-error {
+            display: none; color: #f87171; font-size: 0.78rem; margin-bottom: 0.6rem;
+            padding: 0.4rem 0.8rem; background: rgba(248, 113, 113, 0.1); border-radius: 8px;
+            animation: slideIn 0.2s ease;
+        }
+
+        .form-error.visible { display: block; }
+
+        .btn-create {
+            width: 100%; padding: 0.8rem; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .btn-create:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-create:active { transform: scale(0.98); }
+        .btn-create:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Games Grid */
+        .games-grid {
+            display: flex; flex-wrap: wrap; gap: 1.5rem;
+            justify-content: center; max-width: 960px; margin: 0 auto;
+        }
+
+        .game-card {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 1.5rem; width: 100%; max-width: 480px;
+            backdrop-filter: blur(10px); animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .game-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+        .game-card-header h3 { font-size: 1rem; font-weight: 600; color: #c4b5fd; }
+        .game-card-header .game-date { font-size: 0.75rem; color: #6b6b8a; }
+
+        .btn-delete-game {
+            background: transparent; border: 1px solid rgba(255,255,255,0.12);
+            color: #a0a0c0; font-size: 0.75rem; padding: 0.3rem 0.7rem;
+            border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+
+        .btn-delete-game:hover { color: #f87171; border-color: #f87171; }
+
+        .delete-confirm {
+            display: none; background: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.3); border-radius: 14px;
+            padding: 1rem; margin-bottom: 1rem; text-align: center; animation: fadeIn 0.3s ease;
+        }
+
+        .delete-confirm.visible { display: block; }
+        .delete-confirm p { font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.75rem; }
+        .delete-confirm-btns { display: flex; gap: 0.5rem; justify-content: center; }
+
+        .btn-confirm-del {
+            border: none; border-radius: 10px; padding: 0.5rem 1.2rem;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .btn-confirm-del:active { transform: scale(0.93); }
+        .btn-confirm-del.yes { background: #dc2626; color: #fff; }
+        .btn-confirm-del.yes:hover { background: #b91c1c; }
+        .btn-confirm-del.no { background: rgba(255,255,255,0.1); color: #a0a0c0; }
+        .btn-confirm-del.no:hover { background: rgba(255,255,255,0.15); }
+
+        /* Players */
+        .players { display: flex; gap: 1rem; }
+
+        .player {
+            flex: 1; text-align: center; background: rgba(255,255,255,0.04);
+            border-radius: 16px; padding: 1rem 0.5rem;
+        }
+
+        .player-name {
+            font-size: 0.85rem; font-weight: 600; color: #e0e0f0; margin-bottom: 0.5rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .player-score {
+            font-size: 2.8rem; font-weight: 700; line-height: 1;
+            margin-bottom: 0.8rem; transition: all 0.3s ease;
+        }
+
+        .player-score.positive { color: #4ade80; }
+        .player-score.negative { color: #f87171; }
+        .player-score.zero { color: #fbbf24; }
+
+        .player-buttons { display: flex; flex-direction: column; gap: 0.5rem; }
+        .player-buttons .btn-label { font-size: 0.65rem; color: #6b6b8a; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.2rem; }
+
+        .btn-point {
+            border: none; border-radius: 12px; padding: 0.65rem 0.5rem;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; line-height: 1.2;
+        }
+
+        .btn-point:active { transform: scale(0.93); }
+        .btn-assertive { background: #16a34a; color: #fff; }
+        .btn-assertive:hover { background: #15803d; }
+        .btn-not-assertive { background: #dc2626; color: #fff; }
+        .btn-not-assertive:hover { background: #b91c1c; }
+
+        /* Pending */
+        .pending-section { margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.8rem; }
+        .pending-title { font-size: 0.85rem; font-weight: 600; color: #fbbf24; margin-bottom: 0.5rem; }
+
+        .pending-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.2);
+            padding: 0.6rem 0.8rem; border-radius: 12px; font-size: 0.82rem;
+            margin-bottom: 0.4rem; animation: slideIn 0.25s ease; flex-wrap: wrap; gap: 0.4rem;
+        }
+
+        .pending-item .pending-info { flex: 1; min-width: 140px; }
+        .pending-item .pending-who { color: #c4b5fd; font-weight: 600; }
+        .pending-item .pending-pts { font-weight: 700; }
+        .pending-item .pending-pts.pos { color: #4ade80; }
+        .pending-item .pending-pts.neg { color: #f87171; }
+        .pending-item .pending-approver { color: #fbbf24; font-size: 0.75rem; }
+        .pending-actions { display: flex; gap: 0.4rem; }
+
+        .approval-confirm {
+            display: none; margin-top: 0.3rem; background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 10px;
+            padding: 0.6rem 0.8rem; font-size: 0.78rem; animation: slideIn 0.2s ease;
+        }
+
+        .approval-confirm.visible { display: block; }
+        .approval-confirm p { margin-bottom: 0.4rem; color: #c4b5fd; }
+        .approval-confirm .confirm-btns { display: flex; gap: 0.4rem; }
+
+        .btn-approve, .btn-reject {
+            border: none; border-radius: 8px; padding: 0.4rem 0.8rem;
+            font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+
+        .btn-approve { background: #16a34a; color: #fff; }
+        .btn-approve:hover { background: #15803d; }
+        .btn-approve:active { transform: scale(0.93); }
+        .btn-reject { background: rgba(255,255,255,0.1); color: #a0a0c0; }
+        .btn-reject:hover { background: rgba(255,255,255,0.15); color: #f87171; }
+        .btn-reject:active { transform: scale(0.93); }
+
+        .btn-approve-init {
+            border: none; border-radius: 8px; padding: 0.4rem 0.8rem;
+            font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            background: rgba(99, 102, 241, 0.3); color: #c4b5fd;
+        }
+        .btn-approve-init:hover { background: rgba(99, 102, 241, 0.5); }
+
+        /* History */
+        .game-history { margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.8rem; }
+        .game-history summary { color: #a0a0c0; font-size: 0.8rem; cursor: pointer; margin-bottom: 0.5rem; }
+
+        .history-list { list-style: none; display: flex; flex-direction: column; gap: 0.35rem; max-height: 200px; overflow-y: auto; }
+
+        .history-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.04); padding: 0.5rem 0.75rem;
+            border-radius: 10px; font-size: 0.8rem; animation: slideIn 0.25s ease;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .history-item .h-name { color: #c4b5fd; font-weight: 500; }
+        .history-item .h-pts.pos { color: #4ade80; font-weight: 600; }
+        .history-item .h-pts.neg { color: #f87171; font-weight: 600; }
+        .history-item .h-time { color: #6b6b8a; }
+        .history-item .h-approved { color: #818cf8; font-size: 0.7rem; }
+
+        .no-games-msg { text-align: center; color: #6b6b8a; font-size: 0.9rem; padding: 2rem; }
+
+        /* Tables */
+        .section-container { max-width: 750px; margin: 0 auto; }
+        .section-empty { text-align: center; color: #6b6b8a; font-size: 0.9rem; padding: 3rem 1rem; }
+
+        .data-table {
+            width: 100%; border-collapse: separate; border-spacing: 0;
+            background: rgba(255,255,255,0.04); border-radius: 16px; overflow: hidden;
+        }
+
+        .data-table thead th {
+            background: rgba(99, 102, 241, 0.2); padding: 0.8rem 1rem;
+            font-size: 0.78rem; font-weight: 600; color: #c4b5fd;
+            text-align: left; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .data-table tbody tr { transition: background 0.2s; }
+        .data-table tbody tr:hover { background: rgba(255,255,255,0.04); }
+
+        .data-table tbody td {
+            padding: 0.7rem 1rem; font-size: 0.85rem;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .data-table tfoot td {
+            padding: 0.8rem 1rem; border-top: 2px solid rgba(99, 102, 241, 0.3);
+            font-weight: 600; font-size: 0.85rem; color: #c4b5fd;
+        }
+
+        .sb-game-name { color: #e0e0f0; font-weight: 500; }
+        .sb-date { color: #6b6b8a; font-size: 0.75rem; }
+        .sb-player-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+        .sb-player-name { color: #a0a0c0; font-size: 0.75rem; }
+        .sb-score { font-weight: 700; font-size: 1.1rem; }
+        .sb-score.positive { color: #4ade80; }
+        .sb-score.negative { color: #f87171; }
+        .sb-score.zero { color: #fbbf24; }
+
+        .sb-leader { display: inline-block; font-size: 0.65rem; padding: 0.15rem 0.5rem; border-radius: 6px; font-weight: 600; }
+        .sb-leader.winning { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .sb-leader.tied { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .sb-leader.losing { background: rgba(248, 113, 113, 0.1); color: #f87171; }
+
+        .sb-pending-badge {
+            display: inline-block; font-size: 0.65rem; padding: 0.1rem 0.4rem;
+            border-radius: 5px; background: rgba(251, 191, 36, 0.15); color: #fbbf24;
+        }
+
+        .sb-moves { color: #a0a0c0; }
+
+        /* Dashboard */
+        .dash-rank {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 50%; font-size: 0.75rem;
+            font-weight: 700; margin-right: 0.5rem;
+        }
+
+        .dash-rank.gold { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .dash-rank.silver { background: rgba(192, 192, 192, 0.2); color: #c0c0c0; }
+        .dash-rank.bronze { background: rgba(205, 127, 50, 0.2); color: #cd7f32; }
+        .dash-rank.normal { background: rgba(255,255,255,0.08); color: #a0a0c0; }
+
+        .dash-name { color: #e0e0f0; font-weight: 600; font-size: 0.95rem; }
+
+        .dash-games-badge {
+            display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem;
+            border-radius: 6px; background: rgba(99, 102, 241, 0.15); color: #818cf8; font-weight: 600;
+        }
+
+        .dash-avg { font-size: 0.8rem; color: #a0a0c0; }
+
+        .dash-bar-container {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.08);
+            border-radius: 3px; margin-top: 0.3rem; overflow: hidden;
+        }
+
+        .dash-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+        .dash-bar.positive { background: linear-gradient(90deg, #16a34a, #4ade80); }
+        .dash-bar.negative { background: linear-gradient(90deg, #dc2626, #f87171); }
+        .dash-bar.zero { background: #fbbf24; width: 2px !important; }
+
+        .dash-game-list {
+            font-size: 0.7rem; color: #6b6b8a; margin-top: 0.2rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 12, 41, 0.85); display: flex;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+
+        .loading-overlay.hidden { display: none; }
+
+        .loading-spinner {
+            text-align: center; color: #c4b5fd;
+        }
+
+        .loading-spinner .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #818cf8; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Animations */
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        .pop { animation: pop 0.3s ease; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+        .pulse { animation: pulse 1.5s ease infinite; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .player-score { font-size: 2.2rem; }
+            .btn-point { font-size: 0.75rem; padding: 0.55rem 0.4rem; }
+            .pending-item { font-size: 0.75rem; }
+            .data-table thead th { font-size: 0.68rem; padding: 0.6rem 0.5rem; }
+            .data-table tbody td { padding: 0.5rem; font-size: 0.78rem; }
+            .dash-game-list { max-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Conectando con la base de datos...</p>
+    </div>
+</div>
+
+<div class="app-header">
+    <h1>Comunicacion Asertiva</h1>
+    <p class="subtitle">+50 por comunicar asertivamente &nbsp;|&nbsp; -60 cuando no</p>
+    <p class="rule">Cada jugador propone sus puntos y el otro debe aprobarlos</p>
+</div>
+
+<!-- Sync Status -->
+<div class="sync-status" id="syncStatus">
+    <span class="sync-dot online" id="syncDot"></span>
+    <span class="sync-text" id="syncText">Conectado</span>
+    <button class="btn-refresh" onclick="loadFromCloud()">Actualizar</button>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('juegos')">Juegos</button>
+    <button class="tab-btn" onclick="switchTab('tablero')">Tablero General</button>
+    <button class="tab-btn" onclick="switchTab('dashboard')">Dashboard Jugadores</button>
+</div>
+
+<!-- TAB: Juegos -->
+<div class="tab-content active" id="tab-juegos">
+    <div class="new-game-section">
+        <h2>Crear nuevo juego</h2>
+        <div class="form-row">
+            <input type="text" id="player1Name" placeholder="Nombre Jugador 1" maxlength="20">
+            <input type="text" id="player2Name" placeholder="Nombre Jugador 2" maxlength="20">
+        </div>
+        <div class="form-error" id="formError"></div>
+        <button class="btn-create" onclick="createGame()">Crear Juego</button>
+    </div>
+    <div class="games-grid" id="gamesGrid">
+        <p class="no-games-msg">Cargando juegos...</p>
+    </div>
+</div>
+
+<!-- TAB: Tablero -->
+<div class="tab-content" id="tab-tablero">
+    <div class="section-container" id="scoreboard"></div>
+</div>
+
+<!-- TAB: Dashboard -->
+<div class="tab-content" id="tab-dashboard">
+    <div class="section-container" id="dashboard"></div>
+</div>
+
+<script>
+    // ============================================
+    // CONFIG & STATE
+    // ============================================
+    // >>> IMPORTANTE: Antes de subir a GitHub, pega aqui tu URL de Google Apps Script <<<
+    const API_URL = 'https://script.google.com/macros/s/AKfycbyG4g0WGlnTBS48beFgF59nEgG5DjD0OdndMLdq7P9YjXn839RZosESL_8u9K2pXtro/exec';
+    // Ejemplo: const API_URL = 'https://script.google.com/macros/s/AKfycbx.../exec';
+
+    const LOCAL_BACKUP_KEY = 'asertividad_games_v4';
+    let games = [];
+    let deleteConfirmId = null;
+    let approvalConfirmKey = null;
+    let isSaving = false;
+
+    // ============================================
+    // SYNC STATUS
+    // ============================================
+    function setSyncStatus(status, text) {
+        const dot = document.getElementById('syncDot');
+        const txt = document.getElementById('syncText');
+        dot.className = 'sync-dot ' + status;
+        txt.textContent = text;
+    }
+
+    // ============================================
+    // CLOUD LOAD / SAVE
+    // ============================================
+    async function loadFromCloud() {
+        if (!API_URL) return;
+
+        setSyncStatus('syncing', 'Cargando datos...');
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+
+        try {
+            const resp = await fetch(API_URL);
+            const data = await resp.json();
+
+            if (data.success) {
+                games = data.games || [];
+                // Backup local
+                localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(games));
+                setSyncStatus('online', 'Sincronizado');
+            } else {
+                throw new Error('Error del servidor');
+            }
+        } catch (err) {
+            console.error('Error cargando:', err);
+            // Cargar backup local
+            const backup = localStorage.getItem(LOCAL_BACKUP_KEY);
+            if (backup) games = JSON.parse(backup);
+            setSyncStatus('error', 'Sin conexion (datos locales)');
+        }
+
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        renderAll();
+    }
+
+    async function saveToCloud() {
+        // Guardar local siempre
+        localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(games));
+
+        if (!API_URL) return;
+        if (isSaving) return;
+
+        isSaving = true;
+        setSyncStatus('syncing', 'Guardando...');
+
+        try {
+            const resp = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ games: games })
+            });
+            const data = await resp.json();
+
+            if (data.success) {
+                setSyncStatus('online', 'Sincronizado');
+            } else {
+                throw new Error('Error guardando');
+            }
+        } catch (err) {
+            console.error('Error guardando:', err);
+            setSyncStatus('error', 'Error al guardar (guardado local)');
+        }
+
+        isSaving = false;
+    }
+
+    // ============================================
+    // TABS
+    // ============================================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        const tabMap = { juegos: 0, tablero: 1, dashboard: 2 };
+        document.querySelectorAll('.tab-btn')[tabMap[tab]].classList.add('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+
+        if (tab === 'tablero') renderScoreboard();
+        if (tab === 'dashboard') renderDashboard();
+    }
+
+    // ============================================
+    // VALIDATION
+    // ============================================
+    function showFormError(msg) {
+        const el = document.getElementById('formError');
+        el.textContent = msg; el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 4000);
+    }
+
+    function clearFormError() {
+        document.getElementById('formError').classList.remove('visible');
+        document.getElementById('player1Name').classList.remove('input-error');
+        document.getElementById('player2Name').classList.remove('input-error');
+    }
+
+    function normalizePlayerName(name) {
+        return name.toLowerCase().trim().replace(/\s+/g, ' ');
+    }
+
+    // ============================================
+    // GAME ACTIONS
+    // ============================================
+    function createGame() {
+        clearFormError();
+        const p1Input = document.getElementById('player1Name');
+        const p2Input = document.getElementById('player2Name');
+        const p1Raw = p1Input.value.trim();
+        const p2Raw = p2Input.value.trim();
+
+        if (!p1Raw || !p2Raw) {
+            if (!p1Raw) p1Input.classList.add('input-error');
+            if (!p2Raw) p2Input.classList.add('input-error');
+            showFormError('Debes ingresar el nombre de ambos jugadores.');
+            return;
+        }
+
+        if (normalizePlayerName(p1Raw) === normalizePlayerName(p2Raw)) {
+            p1Input.classList.add('input-error');
+            p2Input.classList.add('input-error');
+            showFormError('Los dos jugadores no pueden tener el mismo nombre.');
+            return;
+        }
+
+        games.unshift({
+            id: Date.now(),
+            createdAt: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
+            players: [{ name: p1Raw, score: 0 }, { name: p2Raw, score: 0 }],
+            pending: [],
+            history: []
+        });
+
+        saveToCloud();
+        renderAll();
+        p1Input.value = '';
+        p2Input.value = '';
+    }
+
+    function proposePoints(gameId, playerIndex, amount) {
+        const game = games.find(g => g.id === gameId);
+        if (!game) return;
+
+        game.pending.push({
+            id: Date.now(),
+            playerIndex: playerIndex,
+            amount: amount,
+            label: amount > 0 ? 'Asertivo' : 'No asertivo',
+            time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+        });
+
+        saveToCloud();
+        renderAll();
+    }
+
+    function showApprovalConfirm(gameId, pendingId) { approvalConfirmKey = gameId + '-' + pendingId; renderAll(); }
+    function cancelApproval() { approvalConfirmKey = null; renderAll(); }
+
+    function confirmApproval(gameId, pendingId) {
+        const game = games.find(g => g.id === gameId);
+        if (!game) return;
+
+        const idx = game.pending.findIndex(p => p.id === pendingId);
+        if (idx === -1) return;
+
+        const pending = game.pending[idx];
+        game.players[pending.playerIndex].score += pending.amount;
+
+        const otherPlayer = game.players[pending.playerIndex === 0 ? 1 : 0];
+        game.history.unshift({
+            player: game.players[pending.playerIndex].name,
+            amount: pending.amount,
+            label: pending.label,
+            approvedBy: otherPlayer.name,
+            time: pending.time
+        });
+
+        if (game.history.length > 30) game.history.pop();
+        game.pending.splice(idx, 1);
+        approvalConfirmKey = null;
+
+        saveToCloud();
+        renderAll();
+
+        const scoreEl = document.getElementById('score-' + gameId + '-' + pending.playerIndex);
+        if (scoreEl) { scoreEl.classList.remove('pop'); void scoreEl.offsetWidth; scoreEl.classList.add('pop'); }
+    }
+
+    function rejectPending(gameId, pendingId) {
+        const game = games.find(g => g.id === gameId);
+        if (!game) return;
+        game.pending = game.pending.filter(p => p.id !== pendingId);
+        approvalConfirmKey = null;
+        saveToCloud();
+        renderAll();
+    }
+
+    function showDeleteConfirm(gameId) { deleteConfirmId = gameId; renderAll(); }
+    function cancelDelete() { deleteConfirmId = null; renderAll(); }
+
+    function confirmDelete(gameId) {
+        games = games.filter(g => g.id !== gameId);
+        deleteConfirmId = null;
+        saveToCloud();
+        renderAll();
+    }
+
+    // ============================================
+    // RENDER GAMES
+    // ============================================
+    function renderAll() {
+        const grid = document.getElementById('gamesGrid');
+
+        if (games.length === 0) {
+            grid.innerHTML = '<p class="no-games-msg">No hay juegos activos. Crea uno arriba para comenzar.</p>';
+            return;
+        }
+
+        grid.innerHTML = games.map(game => {
+            const p1 = game.players[0], p2 = game.players[1];
+            const showingDelete = deleteConfirmId === game.id;
+
+            const deleteHTML = showingDelete
+                ? '<div class="delete-confirm visible"><p>¿Seguro que quieres eliminar este juego? Se perderan todos los datos.</p>' +
+                  '<div class="delete-confirm-btns"><button class="btn-confirm-del yes" onclick="confirmDelete(' + game.id + ')">Si, eliminar</button>' +
+                  '<button class="btn-confirm-del no" onclick="cancelDelete()">Cancelar</button></div></div>' : '';
+
+            let pendingHTML = '';
+            if (game.pending.length > 0) {
+                const items = game.pending.map(pend => {
+                    const proposer = game.players[pend.playerIndex].name;
+                    const approver = game.players[pend.playerIndex === 0 ? 1 : 0].name;
+                    const key = game.id + '-' + pend.id;
+                    const showingConfirm = approvalConfirmKey === key;
+
+                    const confirmHTML = showingConfirm
+                        ? '<div class="approval-confirm visible"><p>Solo <strong>' + approver + '</strong> puede aprobar esto. ¿Eres ' + approver + '?</p>' +
+                          '<div class="confirm-btns"><button class="btn-approve" onclick="confirmApproval(' + game.id + ', ' + pend.id + ')">Si, soy ' + approver + '</button>' +
+                          '<button class="btn-reject" onclick="cancelApproval()">Cancelar</button></div></div>' : '';
+
+                    return '<div class="pending-item"><div class="pending-info">' +
+                        '<span class="pending-who">' + proposer + '</span> reclama ' +
+                        '<span class="pending-pts ' + (pend.amount > 0 ? 'pos' : 'neg') + '">' + (pend.amount > 0 ? '+' : '') + pend.amount + '</span> (' + pend.label + ')' +
+                        '<div class="pending-approver">Solo ' + approver + ' puede aprobar</div></div>' +
+                        '<div class="pending-actions">' +
+                        '<button class="btn-approve-init" onclick="showApprovalConfirm(' + game.id + ', ' + pend.id + ')">Aprobar</button>' +
+                        '<button class="btn-reject" onclick="rejectPending(' + game.id + ', ' + pend.id + ')">Rechazar</button></div></div>' + confirmHTML;
+                }).join('');
+                pendingHTML = '<div class="pending-section"><div class="pending-title pulse">Pendientes de aprobacion (' + game.pending.length + ')</div>' + items + '</div>';
+            }
+
+            const historyItems = game.history.length > 0
+                ? game.history.map(h =>
+                    '<li class="history-item"><span class="h-name">' + h.player + '</span>' +
+                    '<span class="h-pts ' + (h.amount > 0 ? 'pos' : 'neg') + '">' + (h.amount > 0 ? '+' : '') + h.amount + '</span>' +
+                    '<span class="h-approved">Aprobado por ' + h.approvedBy + '</span>' +
+                    '<span class="h-time">' + h.time + '</span></li>').join('')
+                : '<li style="color:#6b6b8a; text-align:center; padding:0.5rem; font-size:0.8rem;">Sin movimientos</li>';
+
+            const playersHTML = [0, 1].map(i => {
+                const p = game.players[i];
+                const cls = p.score > 0 ? 'positive' : p.score < 0 ? 'negative' : 'zero';
+                return '<div class="player"><div class="player-name">' + p.name + '</div>' +
+                    '<div class="player-score ' + cls + '" id="score-' + game.id + '-' + i + '">' + p.score + '</div>' +
+                    '<div class="player-buttons"><p class="btn-label">Solo ' + p.name + ' usa estos:</p>' +
+                    '<button class="btn-point btn-assertive" onclick="proposePoints(' + game.id + ', ' + i + ', 50)">+50 Fui asertivo</button>' +
+                    '<button class="btn-point btn-not-assertive" onclick="proposePoints(' + game.id + ', ' + i + ', -60)">-60 No fui asertivo</button></div></div>';
+            }).join('');
+
+            return '<div class="game-card"><div class="game-card-header">' +
+                '<div><h3>' + p1.name + ' vs ' + p2.name + '</h3><span class="game-date">' + game.createdAt + '</span></div>' +
+                '<button class="btn-delete-game" onclick="showDeleteConfirm(' + game.id + ')">Eliminar</button></div>' +
+                deleteHTML + '<div class="players">' + playersHTML + '</div>' + pendingHTML +
+                '<details class="game-history"><summary>Historial (' + game.history.length + ')</summary>' +
+                '<ul class="history-list">' + historyItems + '</ul></details></div>';
+        }).join('');
+    }
+
+    // ============================================
+    // RENDER SCOREBOARD
+    // ============================================
+    function renderScoreboard() {
+        const sb = document.getElementById('scoreboard');
+        if (games.length === 0) { sb.innerHTML = '<p class="section-empty">No hay juegos creados aun.</p>'; return; }
+
+        let tP1 = 0, tP2 = 0, tM = 0;
+        const rows = games.map(game => {
+            const p1 = game.players[0], p2 = game.players[1];
+            const moves = game.history.length, pending = game.pending.length;
+            tP1 += p1.score; tP2 += p2.score; tM += moves;
+
+            let s1 = '', s2 = '';
+            if (p1.score > p2.score) { s1 = '<span class="sb-leader winning">Liderando</span>'; s2 = '<span class="sb-leader losing">Detras</span>'; }
+            else if (p2.score > p1.score) { s2 = '<span class="sb-leader winning">Liderando</span>'; s1 = '<span class="sb-leader losing">Detras</span>'; }
+            else { s1 = '<span class="sb-leader tied">Empate</span>'; s2 = '<span class="sb-leader tied">Empate</span>'; }
+
+            const c1 = p1.score > 0 ? 'positive' : p1.score < 0 ? 'negative' : 'zero';
+            const c2 = p2.score > 0 ? 'positive' : p2.score < 0 ? 'negative' : 'zero';
+            const pb = pending > 0 ? ' <span class="sb-pending-badge">' + pending + ' pend.</span>' : '';
+
+            return '<tr><td><div class="sb-game-name">' + p1.name + ' vs ' + p2.name + '</div><div class="sb-date">' + game.createdAt + pb + '</div></td>' +
+                '<td><div class="sb-player-cell"><span class="sb-player-name">' + p1.name + '</span><span class="sb-score ' + c1 + '">' + p1.score + '</span>' + s1 + '</div></td>' +
+                '<td><div class="sb-player-cell"><span class="sb-player-name">' + p2.name + '</span><span class="sb-score ' + c2 + '">' + p2.score + '</span>' + s2 + '</div></td>' +
+                '<td class="sb-moves">' + moves + '</td></tr>';
+        }).join('');
+
+        const tc1 = tP1 > 0 ? 'positive' : tP1 < 0 ? 'negative' : 'zero';
+        const tc2 = tP2 > 0 ? 'positive' : tP2 < 0 ? 'negative' : 'zero';
+
+        sb.innerHTML = '<table class="data-table"><thead><tr><th>Juego</th><th>Jugador 1</th><th>Jugador 2</th><th>Jugadas</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody><tfoot><tr><td>Total (' + games.length + ' juegos)</td>' +
+            '<td><span class="sb-score ' + tc1 + '">' + tP1 + '</span></td>' +
+            '<td><span class="sb-score ' + tc2 + '">' + tP2 + '</span></td>' +
+            '<td>' + tM + '</td></tr></tfoot></table>';
+    }
+
+    // ============================================
+    // RENDER DASHBOARD
+    // ============================================
+    function renderDashboard() {
+        const dash = document.getElementById('dashboard');
+        if (games.length === 0) { dash.innerHTML = '<p class="section-empty">No hay juegos creados aun.</p>'; return; }
+
+        const playerMap = {};
+        games.forEach(game => {
+            game.players.forEach(p => {
+                const key = normalizePlayerName(p.name);
+                if (!playerMap[key]) { playerMap[key] = { displayName: p.name, totalScore: 0, gameCount: 0, gameNames: [] }; }
+                playerMap[key].totalScore += p.score;
+                playerMap[key].gameCount += 1;
+                const opp = game.players.find(op => normalizePlayerName(op.name) !== key);
+                playerMap[key].gameNames.push(opp ? 'vs ' + opp.name : game.createdAt);
+            });
+        });
+
+        const players = Object.values(playerMap).sort((a, b) => b.totalScore - a.totalScore);
+        const maxAbs = Math.max(1, ...players.map(p => Math.abs(p.totalScore)));
+
+        const rows = players.map((p, idx) => {
+            const avg = p.gameCount > 0 ? (p.totalScore / p.gameCount).toFixed(1) : '0';
+            const cls = p.totalScore > 0 ? 'positive' : p.totalScore < 0 ? 'negative' : 'zero';
+            const barW = p.totalScore === 0 ? 0 : Math.round((Math.abs(p.totalScore) / maxAbs) * 100);
+            let rankCls = 'normal';
+            if (idx === 0) rankCls = 'gold'; else if (idx === 1) rankCls = 'silver'; else if (idx === 2) rankCls = 'bronze';
+
+            return '<tr><td><span class="dash-rank ' + rankCls + '">' + (idx + 1) + '</span><span class="dash-name">' + p.displayName + '</span></td>' +
+                '<td><span class="dash-games-badge">' + p.gameCount + ' juego' + (p.gameCount !== 1 ? 's' : '') + '</span>' +
+                '<div class="dash-game-list">' + p.gameNames.join(', ') + '</div></td>' +
+                '<td><span class="sb-score ' + cls + '">' + p.totalScore + '</span>' +
+                '<div class="dash-bar-container"><div class="dash-bar ' + cls + '" style="width:' + barW + '%"></div></div></td>' +
+                '<td><span class="dash-avg">' + avg + '</span></td></tr>';
+        }).join('');
+
+        dash.innerHTML = '<table class="data-table"><thead><tr><th>Jugador</th><th>Juegos</th><th>Puntaje Total</th><th>Promedio</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody></table>';
+    }
+
+    // ============================================
+    // AUTO-REFRESH (cada 15 segundos para ver cambios del otro jugador)
+    // ============================================
+    setInterval(() => {
+        if (API_URL && !isSaving) loadFromCloud();
+    }, 15000);
+
+    // ============================================
+    // INIT
+    // ============================================
+    loadFromCloud();
+</script>
+
+</body>
+</html>
